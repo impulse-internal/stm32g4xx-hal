@@ -435,6 +435,16 @@ impl Rcc {
         while self.rb.bdcr.read().lserdy().bit_is_clear() {}
     }
 
+    pub fn enable_lse_only(&self, bypass: bool) {
+        self.rb
+            .bdcr
+            .modify(|_, w| w.lseon().set_bit().lsebyp().bit(bypass).lsedrv().bits(0b11));
+    }
+
+    pub fn check_lse_ready(&self) -> bool {
+        self.rb.bdcr.read().lserdy().bit_is_set()
+    }
+
     pub(crate) fn enable_lsi(&self) {
         self.rb.csr.modify(|_, w| w.lsion().set_bit());
         while self.rb.csr.read().lsirdy().bit_is_clear() {}
