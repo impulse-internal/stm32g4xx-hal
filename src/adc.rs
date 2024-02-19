@@ -1656,7 +1656,6 @@ macro_rules! adc {
                 /// Enables the adc
                 #[inline(always)]
                 pub fn enable(&mut self) {
-                    self.calibrate_all();
                     self.apply_config(self.config);
 
                     self.adc_reg.isr.modify(|_, w| w.adrdy().set_bit());
