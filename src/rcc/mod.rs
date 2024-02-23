@@ -243,7 +243,6 @@ impl Rcc {
             .apb1enr1
             .modify(|_, w| w.rtcapben().set_bit().pwren().set_bit());
         self.rb.apb1smenr1.modify(|_, w| w.rtcapbsmen().set_bit());
-        self.rb.bdcr.modify(|_, w| w.bdrst().set_bit());
 
         let rtc_sel = match src {
             RTCSrc::LSE | RTCSrc::LSE_BYPASS => 0b01,
@@ -256,8 +255,6 @@ impl Rcc {
                 .bits(rtc_sel)
                 .rtcen()
                 .set_bit()
-                .bdrst()
-                .clear_bit()
         });
 
         self.unlock_rtc();
