@@ -437,3 +437,13 @@ impl Default for Config {
         Config::const_default()
     }
 }
+
+/// RTC clock input source
+#[derive(Clone, Copy)]
+pub enum RTCSrc {
+    LSE,
+    LSE_BYPASS,
+    LSI,
+    HSE,
+    HSE_BYPASS,
+}
