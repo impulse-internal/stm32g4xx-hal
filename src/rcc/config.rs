@@ -393,3 +393,13 @@ impl Default for Config {
         }
     }
 }
+
+/// RTC clock input source
+#[derive(Clone, Copy)]
+pub enum RTCSrc {
+    LSE,
+    LSE_BYPASS,
+    LSI,
+    HSE,
+    HSE_BYPASS,
+}
