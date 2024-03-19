@@ -393,6 +393,21 @@ macro_rules! gpio {
                         $PXi { _mode: PhantomData }
                     }
 
+                    /// Configures the pin to operate as a pulled down input pin (without type change)
+                    pub fn into_pull_down_input_dyn(self) -> $PXi<Input<Floating>> {
+                        let offset = 2 * $i;
+                        unsafe {
+                            let gpio = &(*$GPIOX::ptr());
+                            gpio.pupdr.modify(|r, w| {
+                                w.bits((r.bits() & !(0b11 << offset)) | (0b10 << offset))
+                            });
+                            gpio.moder.modify(|r, w| {
+                                w.bits(r.bits() & !(0b11 << offset))
+                            })
+                        };
+                        $PXi { _mode: PhantomData }
+                    }
+
                     /// Configures the pin to operate as a pulled down input pin
                     pub fn into_pull_down_input(self) -> $PXi<Input<PullDown>> {
                         let offset = 2 * $i;
@@ -400,6 +415,21 @@ macro_rules! gpio {
                             let gpio = &(*$GPIOX::ptr());
                             gpio.pupdr.modify(|r, w| {
                                 w.bits((r.bits() & !(0b11 << offset)) | (0b10 << offset))
+                            });
+                            gpio.moder.modify(|r, w| {
+                                w.bits(r.bits() & !(0b11 << offset))
+                            })
+                        };
+                        $PXi { _mode: PhantomData }
+                    }
+
+                    /// Configures the pin to operate as a pulled up input pin (without type change)
+                    pub fn into_pull_up_input_dyn(self) -> $PXi<Input<Floating>> {
+                        let offset = 2 * $i;
+                        unsafe {
+                            let gpio = &(*$GPIOX::ptr());
+                            gpio.pupdr.modify(|r, w| {
+                                w.bits((r.bits() & !(0b11 << offset)) | (0b01 << offset))
                             });
                             gpio.moder.modify(|r, w| {
                                 w.bits(r.bits() & !(0b11 << offset))
