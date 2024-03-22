@@ -27,6 +27,8 @@ features = ["critical-section-single-core"]
 [dependencies.fdcan]
 version = "0.2.0"
 features = ["fdcan_g0_g4_l5"]
+git = "https://github.com/impulse-internal/fdcan.git"
+rev = "00a32258b6eb8f7755a2b722f38e025f8bd6a9d8"
 
 [dependencies.cast]
 version = "0.2.7"
