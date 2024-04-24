@@ -156,7 +156,7 @@ impl<'a, const SECTOR_SZ_KB: u32> FlashWriter<'a, SECTOR_SZ_KB> {
     }
 
     /// Erase sector which contains `start_offset`
-    pub fn page_erase(&mut self, start_offset: u32) -> Result<()> {
+    pub fn page_erase(&mut self, start_offset: u32, bank: u8) -> Result<()> {
         self.valid_address(start_offset)?;
 
         // Unlock Flash
@@ -164,6 +164,16 @@ impl<'a, const SECTOR_SZ_KB: u32> FlashWriter<'a, SECTOR_SZ_KB> {
 
         // Set Page Erase
         self.flash.cr.cr().modify(|_, w| w.per().set_bit());
+
+        let mut cr = self.flash.cr.cr().read().bits();
+
+        // Set Bank (doesn't exisit in the flash_g4 as it's only for CAT3 devices
+        if bank == 2 {
+          cr = cr | 1 << 11;
+        } else if bank != 1 {
+          return Err(Error::EraseError);
+        }
+        self.flash.cr.cr().write(|w| unsafe { w.bits(cr)});
 
         let page = start_offset / SECTOR_SZ_KB;
 
@@ -220,14 +230,14 @@ impl<'a, const SECTOR_SZ_KB: u32> FlashWriter<'a, SECTOR_SZ_KB> {
     }
 
     /// Erase the Flash Sectors from `FLASH_START + start_offset` to `length`
-    pub fn erase(&mut self, start_offset: u32, length: usize) -> Result<()> {
+    pub fn erase(&mut self, start_offset: u32, length: usize, bank: u8) -> Result<()> {
         self.valid_length(start_offset, length, true)?;
 
         // Erase every sector touched by start_offset + length
         for offset in
             (start_offset..start_offset + length as u32).step_by(SECTOR_SZ_KB.try_into().unwrap())
         {
-            self.page_erase(offset)?;
+            self.page_erase(offset, bank)?;
         }
 
         // Report Success
