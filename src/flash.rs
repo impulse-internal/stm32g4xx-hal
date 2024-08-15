@@ -325,12 +325,12 @@ impl<'a, const SECTOR_SZ_KB: u32> FlashWriter<'a, SECTOR_SZ_KB> {
 
             // Check for errors
             if self.flash.sr.sr().read().pgaerr().bit_is_set() {
-                self.flash.sr.sr().modify(|_, w| w.pgaerr().clear_bit());
+                self.flash.sr.sr().modify(|_, w| w.pgaerr().set_bit());
 
                 self.lock()?;
                 return Err(Error::ProgrammingError);
             } else if self.flash.sr.sr().read().wrperr().bit_is_set() {
-                self.flash.sr.sr().modify(|_, w| w.wrperr().clear_bit());
+                self.flash.sr.sr().modify(|_, w| w.wrperr().set_bit());
 
                 self.lock()?;
                 return Err(Error::WriteError);
