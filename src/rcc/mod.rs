@@ -474,6 +474,9 @@ impl Rcc {
     pub fn force_reset_backup(&self) {
         self.rb
             .bdcr
+            .modify(|_, w| w.lseon().clear_bit());
+        self.rb
+            .bdcr
             .modify(|_, w| w.bdrst().set_bit());
     }
 
