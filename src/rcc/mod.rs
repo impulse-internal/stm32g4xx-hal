@@ -483,6 +483,10 @@ impl Rcc {
             .modify(|_, w| w.bdrst().clear_bit());
     }
 
+    pub fn check_lse_bypass(&self) -> bool {
+        self.rb.bdcr.read().lsebyp().bit_is_set()
+    }
+
     pub fn check_lse_ready(&self) -> bool {
         self.rb.bdcr.read().lserdy().bit_is_set()
     }
