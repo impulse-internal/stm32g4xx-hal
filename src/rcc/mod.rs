@@ -471,6 +471,18 @@ impl Rcc {
             .modify(|_, w| w.lseon().set_bit().lsebyp().bit(bypass).lsedrv().bits(0b11));
     }
 
+    pub fn force_reset_backup(&self) {
+        self.rb
+            .bdcr
+            .modify(|_, w| w.bdrst().set_bit());
+    }
+
+    pub fn release_reset_backup(&self) {
+        self.rb
+            .bdcr
+            .modify(|_, w| w.bdrst().clear_bit());
+    }
+
     pub fn check_lse_ready(&self) -> bool {
         self.rb.bdcr.read().lserdy().bit_is_set()
     }
