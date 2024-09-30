@@ -117,6 +117,15 @@ impl Rtc {
         });
     }
 
+    pub fn set_prediv(&mut self, sync_val: u16, async_val: u8) {
+        self.modify(|rb| {
+            rb.prer.modify(|_, w| unsafe { w.prediv_a().bits(async_val) });
+        });
+        self.modify(|rb| {
+            rb.prer.modify(|_, w| unsafe { w.prediv_s().bits(sync_val) });
+        });
+    }
+
     pub fn set_date(&mut self, date: &Date) {
         let (yt, yu) = bcd2_encode(date.year - 1970);
         let (mt, mu) = bcd2_encode(date.month);
@@ -165,6 +174,14 @@ impl Rtc {
             });
             rb.cr.modify(|_, w| w.fmt().bit(time.daylight_savings));
         });
+    }
+
+    pub fn get_async_prediv(&self) -> u8 {
+        self.rb.prer.read().prediv_a().bits()
+    }
+
+    pub fn get_sync_prediv(&self) -> u16 {
+        self.rb.prer.read().prediv_s().bits()
     }
 
     pub fn get_time(&self) -> Time {
