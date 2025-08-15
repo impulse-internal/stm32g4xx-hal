@@ -262,9 +262,9 @@ impl Rcc {
     pub(crate) fn enable_rtc(&mut self, src: RTCSrc) {
         self.unlock_rtc();
         self.rb
-            .apb1enr1
+            .apb1enr1()
             .modify(|_, w| w.rtcapben().set_bit().pwren().set_bit());
-        self.rb.apb1smenr1.modify(|_, w| w.rtcapbsmen().set_bit());
+        self.rb.apb1smenr1().modify(|_, w| w.rtcapbsmen().set_bit());
 
         let rtc_sel = match src {
             RTCSrc::LSE | RTCSrc::LSE_BYPASS => 0b01,
@@ -272,7 +272,7 @@ impl Rcc {
             RTCSrc::HSE | RTCSrc::HSE_BYPASS => 0b11,
         };
 
-        self.rb.bdcr.modify(|_, w| {
+        self.rb.bdcr().modify(|_, w| unsafe {
             w.rtcsel()
                 .bits(rtc_sel)
                 .rtcen()
@@ -489,31 +489,31 @@ impl Rcc {
 
     pub fn enable_lse_only(&self, bypass: bool) {
         self.rb
-            .bdcr
-            .modify(|_, w| w.lseon().set_bit().lsebyp().bit(bypass).lsedrv().bits(0b11));
+            .bdcr()
+            .modify(|_, w| unsafe { w.lseon().set_bit().lsebyp().bit(bypass).lsedrv().bits(0b11) });
     }
 
     pub fn force_reset_backup(&self) {
         self.rb
-            .bdcr
+            .bdcr()
             .modify(|_, w| w.lseon().clear_bit());
         self.rb
-            .bdcr
+            .bdcr()
             .modify(|_, w| w.bdrst().set_bit());
     }
 
     pub fn release_reset_backup(&self) {
         self.rb
-            .bdcr
+            .bdcr()
             .modify(|_, w| w.bdrst().clear_bit());
     }
 
     pub fn check_lse_bypass(&self) -> bool {
-        self.rb.bdcr.read().lsebyp().bit_is_set()
+        self.rb.bdcr().read().lsebyp().bit_is_set()
     }
 
     pub fn check_lse_ready(&self) -> bool {
-        self.rb.bdcr.read().lserdy().bit_is_set()
+        self.rb.bdcr().read().lserdy().bit_is_set()
     }
 
     pub(crate) fn enable_lsi(&self) {

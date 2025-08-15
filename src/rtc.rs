@@ -113,16 +113,16 @@ impl Rtc {
 
     pub fn set_hour_format(&mut self, fmt: RtcHourFormat) {
         self.modify(|rb| {
-            rb.cr.modify(|_, w| w.fmt().bit(fmt == RtcHourFormat::H12));
+            rb.cr().modify(|_, w| w.fmt().bit(fmt == RtcHourFormat::H12));
         });
     }
 
     pub fn set_prediv(&mut self, sync_val: u16, async_val: u8) {
         self.modify(|rb| {
-            rb.prer.modify(|_, w| unsafe { w.prediv_a().bits(async_val) });
+            rb.prer().modify(|_, w| unsafe { w.prediv_a().bits(async_val) });
         });
         self.modify(|rb| {
-            rb.prer.modify(|_, w| unsafe { w.prediv_s().bits(sync_val) });
+            rb.prer().modify(|_, w| unsafe { w.prediv_s().bits(sync_val) });
         });
     }
 
@@ -132,7 +132,7 @@ impl Rtc {
         let (dt, du) = bcd2_encode(date.day);
 
         self.modify(|rb| {
-            rb.dr.write(|w| unsafe {
+            rb.dr().write(|w| unsafe {
                 w.dt()
                     .bits(dt)
                     .du()
@@ -156,7 +156,7 @@ impl Rtc {
         let (mnt, mnu) = bcd2_encode(time.minutes);
         let (st, su) = bcd2_encode(time.seconds);
         self.modify(|rb| {
-            rb.tr.write(|w| unsafe {
+            rb.tr().write(|w| unsafe {
                 w.ht()
                     .bits(ht)
                     .hu()
@@ -172,30 +172,30 @@ impl Rtc {
                     .pm()
                     .clear_bit()
             });
-            rb.cr.modify(|_, w| w.fmt().bit(time.daylight_savings));
+            rb.cr().modify(|_, w| w.fmt().bit(time.daylight_savings));
         });
     }
 
     pub fn get_async_prediv(&self) -> u8 {
-        self.rb.prer.read().prediv_a().bits()
+        self.rb.prer().read().prediv_a().bits()
     }
 
     pub fn get_sync_prediv(&self) -> u16 {
-        self.rb.prer.read().prediv_s().bits()
+        self.rb.prer().read().prediv_s().bits()
     }
 
     pub fn get_time(&self) -> Time {
-        let timer = self.rb.tr.read();
+        let timer = self.rb.tr().read();
         Time::new(
             bcd2_decode(timer.ht().bits(), timer.hu().bits()).hours(),
             bcd2_decode(timer.mnt().bits(), timer.mnu().bits()).minutes(),
             bcd2_decode(timer.st().bits(), timer.su().bits()).secs(),
-            self.rb.cr.read().fmt().bit(),
+            self.rb.cr().read().fmt().bit(),
         )
     }
 
     pub fn get_date(&self) -> Date {
-        let date = self.rb.dr.read();
+        let date = self.rb.dr().read();
         Date::new(
             (bcd2_decode(date.yt().bits(), date.yu().bits()) + 1970).year(),
             bcd2_decode(date.mt().bit() as u8, date.mu().bits()).month(),
@@ -204,7 +204,7 @@ impl Rtc {
     }
 
     pub fn get_week_day(&self) -> u8 {
-        self.rb.dr.read().wdu().bits()
+        self.rb.dr().read().wdu().bits()
     }
 
     pub fn set_alarm_a(&mut self, alarm: impl Into<Alarm>) {
@@ -215,13 +215,13 @@ impl Rtc {
         let (st, su) = bcd2_encode(alarm.seconds.unwrap_or_default() as u32);
 
         self.modify(|rb| {
-            rb.alrmassr.write(|w| unsafe {
+            rb.alrmassr().write(|w| unsafe {
                 w.maskss()
                     .bits(alarm.subseconds_mask_bits)
                     .ss()
                     .bits(alarm.subseconds)
             });
-            rb.alrmar.write(|w| unsafe {
+            rb.alrmar().write(|w| unsafe {
                 w.wdsel().bit(alarm.use_weekday);
                 w.msk1().bit(alarm.seconds.is_none());
                 w.msk2().bit(alarm.minutes.is_none());
@@ -237,7 +237,7 @@ impl Rtc {
                 w.su().bits(su)
             });
 
-            rb.cr.modify(|_, w| w.alrae().set_bit());
+            rb.cr().modify(|_, w| w.alrae().set_bit());
         });
     }
 
@@ -248,13 +248,13 @@ impl Rtc {
         let (st, su) = bcd2_encode(alarm.seconds.unwrap_or_default() as u32);
 
         self.modify(|rb| {
-            rb.alrmbssr.write(|w| unsafe {
+            rb.alrmbssr().write(|w| unsafe {
                 w.maskss()
                     .bits(alarm.subseconds_mask_bits)
                     .ss()
                     .bits(alarm.subseconds)
             });
-            rb.alrmbr.write(|w| unsafe {
+            rb.alrmbr().write(|w| unsafe {
                 w.wdsel().bit(alarm.use_weekday);
                 w.msk1().bit(alarm.seconds.is_none());
                 w.msk2().bit(alarm.minutes.is_none());
@@ -270,43 +270,49 @@ impl Rtc {
                 w.su().bits(su)
             });
 
-            rb.cr.modify(|_, w| w.alrbe().set_bit());
+            rb.cr().modify(|_, w| w.alrbe().set_bit());
         });
     }
 
     pub fn listen(&mut self, ev: Event) {
-        self.modify(|rb| match ev {
-            Event::WakeupTimer => rb.cr.modify(|_, w| w.wutie().set_bit()),
-            Event::AlarmA => rb.cr.modify(|_, w| w.alraie().set_bit()),
-            Event::AlarmB => rb.cr.modify(|_, w| w.alrbie().set_bit()),
-            Event::Timestamp => rb.cr.modify(|_, w| w.tsie().set_bit()),
-        })
+        self.modify(|rb| {
+            match ev {
+                Event::WakeupTimer => rb.cr().modify(|_, w| w.wutie().set_bit()),
+                Event::AlarmA => rb.cr().modify(|_, w| w.alraie().set_bit()),
+                Event::AlarmB => rb.cr().modify(|_, w| w.alrbie().set_bit()),
+                Event::Timestamp => rb.cr().modify(|_, w| w.tsie().set_bit()),
+            };
+        });
     }
 
     pub fn unlisten(&mut self, ev: Event) {
-        self.modify(|rb| match ev {
-            Event::WakeupTimer => rb.cr.modify(|_, w| w.wutie().clear_bit()),
-            Event::AlarmA => rb.cr.modify(|_, w| w.alraie().clear_bit()),
-            Event::AlarmB => rb.cr.modify(|_, w| w.alrbie().clear_bit()),
-            Event::Timestamp => rb.cr.modify(|_, w| w.tsie().clear_bit()),
-        })
+        self.modify(|rb| {
+            match ev {
+                Event::WakeupTimer => rb.cr().modify(|_, w| w.wutie().clear_bit()),
+                Event::AlarmA => rb.cr().modify(|_, w| w.alraie().clear_bit()),
+                Event::AlarmB => rb.cr().modify(|_, w| w.alrbie().clear_bit()),
+                Event::Timestamp => rb.cr().modify(|_, w| w.tsie().clear_bit()),
+            };
+        });
     }
 
     pub fn is_pending(&self, ev: Event) -> bool {
         match ev {
-            Event::WakeupTimer => self.rb.sr.read().wutf().bit_is_set(),
-            Event::AlarmA => self.rb.sr.read().alraf().bit_is_set(),
-            Event::AlarmB => self.rb.sr.read().alrbf().bit_is_set(),
-            Event::Timestamp => self.rb.sr.read().tsf().bit_is_set(),
+            Event::WakeupTimer => self.rb.sr().read().wutf().bit_is_set(),
+            Event::AlarmA => self.rb.sr().read().alraf().bit_is_set(),
+            Event::AlarmB => self.rb.sr().read().alrbf().bit_is_set(),
+            Event::Timestamp => self.rb.sr().read().tsf().bit_is_set(),
         }
     }
 
     pub fn unpend(&mut self, ev: Event) {
-        self.modify(|rb| match ev {
-            Event::WakeupTimer => rb.scr.write(|w| w.cwutf().set_bit()),
-            Event::AlarmA => rb.scr.write(|w| w.calraf().set_bit()),
-            Event::AlarmB => rb.scr.write(|w| w.calrbf().set_bit()),
-            Event::Timestamp => rb.scr.write(|w| w.ctsf().set_bit()),
+        self.modify(|rb| {
+            match ev {
+                Event::WakeupTimer => rb.scr().write(|w| w.cwutf().set_bit()),
+                Event::AlarmA => rb.scr().write(|w| w.calraf().set_bit()),
+                Event::AlarmB => rb.scr().write(|w| w.calrbf().set_bit()),
+                Event::Timestamp => rb.scr().write(|w| w.ctsf().set_bit()),
+            };
         });
     }
 
@@ -317,7 +323,7 @@ impl Rtc {
     ) {
         pin.setup();
         self.modify(|rb| {
-            rb.cr.modify(|_, w| unsafe {
+            rb.cr().modify(|_, w| unsafe {
                 w.osel()
                     .bits(0b0)
                     .out2en()
@@ -337,21 +343,21 @@ impl Rtc {
         F: FnMut(&mut RTC),
     {
         // Disable write protection
-        self.rb.wpr.write(|w| unsafe { w.bits(0xCA) });
-        self.rb.wpr.write(|w| unsafe { w.bits(0x53) });
+        self.rb.wpr().write(|w| unsafe { w.bits(0xCA) });
+        self.rb.wpr().write(|w| unsafe { w.bits(0x53) });
         // Enter init mode
-        let isr = self.rb.icsr.read();
+        let isr = self.rb.icsr().read();
         if isr.initf().bit_is_clear() {
-            self.rb.icsr.write(|w| w.init().set_bit());
-            self.rb.icsr.write(|w| unsafe { w.bits(0xFFFF_FFFF) });
-            while self.rb.icsr.read().initf().bit_is_clear() {}
+            self.rb.icsr().write(|w| w.init().set_bit());
+            self.rb.icsr().write(|w| unsafe { w.bits(0xFFFF_FFFF) });
+            while self.rb.icsr().read().initf().bit_is_clear() {}
         }
         // Invoke closure
         closure(&mut self.rb);
         // Exit init mode
-        self.rb.icsr.write(|w| w.init().clear_bit());
+        self.rb.icsr().write(|w| w.init().clear_bit());
         // Enable_write_protection
-        self.rb.wpr.write(|w| unsafe { w.bits(0xFF) });
+        self.rb.wpr().write(|w| unsafe { w.bits(0xFF) });
     }
 }
 
